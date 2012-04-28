@@ -10,8 +10,10 @@ Javascript templating system which makes builder objects from interfaces defined
     <div id="nav">
         $nav{
         <ul class="nav-list">
-            $header(label){<li class="nav-header">$label;</li>}header;
-            $item(icon, label, uri){<li><a href="$uri;"><i class="icon-$icon;"></i> $label;</a></li>}item;
+            $item() {
+                $header(label){<li class="nav-header">$label;</li>}header;
+                $link(icon, label, uri){<li><a href="$uri;"><i class="icon-$icon;"></i> $label;</a></li>}link;
+            }item;
         </ul>
         }nav;
     </div>
@@ -32,24 +34,25 @@ Javascript templating system which makes builder objects from interfaces defined
 
 ```javascript
 // `templateString` contains the above template
-var tmpl = new Tint(templateString);
+var tmpl = new Tint.compile(templateString);
 
 // nav
-tmpl.nav.header('Inbox');
-tmpl.nav.item('inbox', 'Inbox', '#');
-tmpl.nav.item('cog', 'Settings', '#/settings');
-tmpl.nav.header('Services');
-tmpl.nav.item('folder', 'MyService', '#/myservice');
+tmpl.nav.item().header('Inbox');
+tmpl.nav.item().link('inbox', 'Inbox', '#');
+tmpl.nav.item().link('cog', 'Settings', '#/settings');
+tmpl.nav.item().header('Services');
+tmpl.nav.item().link('folder', 'MyService', '#/myservice');
 
 // content
 tmpl.title = "Your Inbox";
 
 var tmplTable = tmpl.table();
-tmplTable.class().add('table').add('table-condensed');
+tmplTable.class().add('table table-condensed');
 if (config.useborders) {
-    tmplTable.children('class')[0].add('bordered');
+    tmplTable._class[0].add('bordered');
 }
 for (var i=0; i < messages.length; i++) {
+    var message = messages[i];
     tmplTable.message(message.service, message.uri, message.author, message.summary, message.date);
 }
 

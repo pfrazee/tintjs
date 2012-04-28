@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta author="pfraze">
+        <title>Tint - Example</title>
+        <script src="tint.js"></script>
+    </head>
+    <body>
+        <div id="target">
+            Loading...
+        </div>
+        <script type="script/html" id="tmpl">
+            <div id="container">
+                <div id="nav">
+                    $nav{
+                    <ul class="nav-list">
+                        $item() {
+                            $header(label){<li class="nav-header">$label;</li>}header;
+                            $link(icon, label, uri){<li><a href="$uri;"><i class="icon-$icon;"></i> $label;</a></li>}link;
+                        }item;
+                    </ul>
+                    }nav;
+                </div>
+                <div id="content">
+                    <h3>$title;</h3>
+                    $table(){
+                    <table $class(){class="$add(class){ $class; }add;"}class;>
+                        $message(serviceLabel, uri, author, title, date) {
+                            <tr><td><span class="label">$serviceLabel;</span></td><td><a href="$uri;"><strong>$author;</strong> $title;</a></td><td>$date;</td></tr>
+                        }message;
+                    </table>
+                    }table;
+                </div>
+            </div>
+        </script>
+        <script>
+    (function() {
+        var tmpl = new Tint.compile(document.getElementById('tmpl').innerHTML);
+
+        // nav
+        tmpl.nav.item().header('Inbox');
+        tmpl.nav.item().link('inbox', 'Inbox', '#');
+        tmpl.nav.item().link('cog', 'Settings', '#/settings');
+        tmpl.nav.item().header('Services');
+        tmpl.nav.item().link('folder', 'MyService', '#/myservice');
+
+        // content
+        tmpl.title = "Your Inbox";
+
+        var tmplTable = tmpl.table();
+        tmplTable.class().add('table table-condensed');
+        if (/*config.useborders*/ true) {
+            tmplTable._class[0].add('bordered');
+        }
+        var messages = [
+            { service:"GMail", uri:"http://google.com", author:"friend", summary:"Hey Bud", date:"today" },
+            { service:"GMail", uri:"http://google.com", author:"friend", summary:"Hey Bud", date:"today" },
+            { service:"GMail", uri:"http://google.com", author:"friend", summary:"Hey Bud", date:"today" }
+        ];
+        for (var i=0; i < messages.length; i++) {
+            var message = messages[i];
+            tmplTable.message(message.service, message.uri, message.author, message.summary, message.date);
+        }
+
+        document.getElementById('target').innerHTML = tmpl.toString();
+    })();
+        </script>
+    </body>
+</html>
