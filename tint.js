@@ -1,19 +1,41 @@
-var Tint = (typeof module !== "undefined" && module.exports) || {};
+(function() {
+    // Set up namespace
+    var Tint;
+    if (typeof exports != 'undefined') {
+        Tint = exports;
+    } else {
+        Tint = this.Tint = {};
+    }
 
-(function(exports) {
-    // :TODO:
-    exports.compile = function(tmpl) {
-        var builder = new TintBlock();
+    // Creates a string-builder prototype using the interface described in the template
+    // - `tmpl` must be a string
+    var compile = function(tmpl, opt_constructor) {
+        // Parse the definition
+        var builder = new TintBlockPrototype();
         builder.parse(tmpl);
-        return builder;
+        
+        // Create the type
+        var TintTmpl = function() {
+            tintBlockConstructor.call(this);
+            opt_constructor && opt_constructor.apply(this, arguments);
+        };
+        TintTmpl.prototype = builder;
+        
+        return TintTmpl;
     };
 
-    // Block interface
-    var TintBlock = function() {
+    var tintBlockConstructor = function() {
+        for (var bname in this._blocks) {
+            this[bname] = new (this._blocks[bname])();
+        }
+    };
+
+    var TintBlockPrototype = function _TintBlockPrototype() {
         this._outVarNames = [];
         this._outParts = [];
+        this._blocks = {};
     };
-    TintBlock.prototype.parse = function(tmpl) {
+    TintBlockPrototype.prototype.parse = function(tmpl) {
         var isParsing = false
         ,   readStart = 0
         ,   curName = null
@@ -91,18 +113,21 @@ var Tint = (typeof module !== "undefined" && module.exports) || {};
                 //`Block-- find the end, then recursively parse
                 var blockEnd = tmpl.indexOf('}' + curName + ';', readStart);
                 if (blockEnd == -1) { throw "Block '"+curName+"' must be ended by a '}"+curName+";"; }
-                var blockPrototype = new TintBlock();
+                var blockPrototype = new TintBlockPrototype();
                 blockPrototype.parse(tmpl.substring(readStart, blockEnd));
                 
                 // Create the constructor
-                var BlockConstructor = function() {};
-                BlockConstructor.prototype = blockPrototype;
+                var TintBlock = function() {
+                    tintBlockConstructor.call(this);
+                };
+                TintBlock.prototype = blockPrototype;
                 
                 // Add function / block
                 if (isFunc) {
-                    this[curName] = TintFunction(curName, paramList, BlockConstructor);
+                    this[curName] = TintFunction(curName, paramList, TintBlock);
                 } else {
-                    this[curName] = new BlockConstructor();
+                    if (!this._blocks) { this._blocks = {}; }
+                    this._blocks[curName] = TintBlock;
                 }
                 
                 // Move past the block
@@ -114,7 +139,7 @@ var Tint = (typeof module !== "undefined" && module.exports) || {};
         var part = tmpl.substring(readStart, tmplLen);
         if (part) { this._outParts.push(part); }
     };
-    TintBlock.prototype.toString = function() {
+    TintBlockPrototype.prototype.toString = function() {
         // Stringify our variables
         var params = [];
         for (var i=0; i < this._outVarNames.length; i++) {
@@ -145,7 +170,6 @@ var Tint = (typeof module !== "undefined" && module.exports) || {};
     var TintFunction = function(name, paramList, BlockDef) {
         return function() {
             // `this` should be the parent block
-            parent = this;
             // Create this function's blocklist, if dne
             if (!this['_' + name]) {
                 this['_' + name] = [];
@@ -162,7 +186,10 @@ var Tint = (typeof module !== "undefined" && module.exports) || {};
             return newBlock;
         };
     };
-    
+
+    // Takes an array of strings and an arbitrary number of arguments
+    //  - if the array element is a number, will replace that element with the argument in that position
+    //  - recurses any elements which are arrays
     var arrayToString = function(arr) {
         var str = '', args = Array.prototype.splice.call(arguments, 1);
         for (var i=0; i < arr.length; i++) {
@@ -180,122 +207,7 @@ var Tint = (typeof module !== "undefined" && module.exports) || {};
         }
         return str;
     };
-})(Tint);
 
-// Main template
-/*var MyTmpl = function() {
-    this.nav = new MyTmplNav();
-    this.table = TintFunction('table', MyTmplTable);
-};
-MyTmpl.prototype = new TintBlock([
-    '<div id="container"><div id="nav">',
-    0,
-    '</div><div id="content"><h3>',
-    1,
-    '</h3>',
-    2,
-    '</div></div>'
-], ['nav','title','table']);
-
-// Nav block
-var MyTmplNav = function() {
-};
-MyTmplNav.prototype = new TintBlock([
-    'nav title:', 0
-], ['title']);
-
-// Table block
-var MyTmplTable = function() {
-};
-MyTmplTable.prototype = new TintBlock([
-    'table title:', 0
-], ['title']);
-
-var tmpl = function() {
-    var parts = [
-        '<div id="container"><div id="nav">',
-        0,
-        '</div><div id="content"><h3>',
-        1,
-        '</h3>',
-        2,
-        '</div></div>'
-    ];
-    return arrayToString(parts, tmpl.nav(), 'The Title', tmpl.table());
-};
-tmpl.nav = function() {
-    var parts = [
-        '<ul class="nav-list">',
-        0,
-        '</ul>'
-    ];
-    return arrayToString(parts, tmpl.nav.item());
-};
-tmpl.nav.item = function() {
-    var parts = [
-        0,
-        1
-    ];
-    return arrayToString(parts, tmpl.nav.item.header('header'), tmpl.nav.item.link('cog','Link','http://google.com'));
-};
-tmpl.nav.item.header = function(label) {
-    var parts = [
-        '<li class="nav-header">',
-        0,
-        '</li>'
-    ];
-    return arrayToString(parts, label);
-};
-tmpl.nav.item.link = function(icon, label, uri) {
-    var parts = [
-        '<li><a href="',
-        0,
-        '"><i class="icon-',
-        1,
-        '"></i> ',
-        2,
-        '</a></li>'
-    ];
-    return arrayToString(parts, uri, icon, label);
-};
-tmpl.table = function() {
-    var parts = [
-        '<table ',
-        0,
-        '>',
-        1,
-        '</table>'
-    ];
-    return arrayToString(parts, tmpl.table.clss(), tmpl.table.message('fixture','http://google.com', 'pfraze', 'hello world', 'today'));
-};
-tmpl.table.clss = function() {
-    var parts = [
-        'clss="',
-        0,
-        '"'
-    ];
-    return arrayToString(parts, tmpl.table.clss.add('condensed'));
-};
-tmpl.table.clss.add = function(clss) {
-    var parts = [
-        0
-    ];
-    return arrayToString(parts, clss);
-};
-tmpl.table.message = function(serviceLabel, uri, author, title, date) {
-    var parts = [
-        '<tr><td><span class="label">',
-        0,
-        '</span></td><td><a href="',
-        1,
-        '"><strong>',
-        2,
-        '</strong> ',
-        3,
-        '</a></td><td>',
-        4,
-        '</td></tr>'
-    ];
-    return arrayToString(parts, serviceLabel, uri, author, title, date);
-};
-*/
+    // Exports
+    Tint.compile = compile;
+}).call(this);

@@ -25,7 +25,7 @@
                 <div id="content">
                     <h3>$title;</h3>
                     $table(){
-                    <table $class(){class="$add(class){ $class; }add;"}class;>
+                    <table $class($class){class="$class; $add(class){ $class; }add;"}class;>
                         $message(serviceLabel, uri, author, title, date) {
                             <tr><td><span class="label">$serviceLabel;</span></td><td><a href="$uri;"><strong>$author;</strong> $title;</a></td><td>$date;</td></tr>
                         }message;
@@ -49,7 +49,7 @@
         tmpl.title = "Your Inbox";
 
         var tmplTable = tmpl.table();
-        tmplTable.class().add('table table-condensed');
+        tmplTable.class('table table-condensed');
         if (/*config.useborders*/ true) {
             tmplTable._class[0].add('bordered');
         }
