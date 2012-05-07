@@ -1,0 +1,11 @@
+{
+    "name":"tint-js",
+    "description":"Creates objects with interfaces spec-ed in templates to build output",
+    "homepage":"http://github.com/pfraze/tint",
+    "keywords":["templates","server","client","browser"],
+    "author":"Paul Frazee <pfrazee@gmail.com>",
+    "repository":"{"type":"git","url":"git://github.com/pfraze/tint.git"},
+    "main":"tint.js",
+    "version":"0.0.1"
+}
+    
