@@ -1,5 +1,5 @@
-Tint
-====
+TintJS
+======
 
 Javascript templating system which makes builder objects from interfaces defined in templates.
 
