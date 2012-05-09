@@ -1,67 +1,117 @@
 TintJS
 ======
 
-Javascript templating system which makes builder objects from interfaces defined in templates.
+Tint uses templates which specify an interface of variables, namespaces, and functions. That interface is used to compile a prototype for objects which build the output.
 
-## HTML template
+The template:
 
-```
+```HTML
 <div id="container">
     <div id="nav">
         $nav{
         <ul class="nav-list">
             $item() {
                 $header(label){<li class="nav-header">$label;</li>}header;
-                $link(icon, label, uri){<li><a href="$uri;"><i class="icon-$icon;"></i> $label;</a></li>}link;
+                $link(label, uri){<li><a href="$uri;">$label;</a></li>}link;
             }item;
         </ul>
         }nav;
     </div>
     <div id="content">
         <h3>$title;</h3>
-        $table(){
-        <table $class(){class="$add(class){$class;}add;"}class;>
-            $message(serviceLabel, uri, author, title, date) {
-                <tr><td><span class="label">$serviceLabel;</span></td><td><a href="$uri;"><strong>$author;</strong> $title;</a></td><td>$date;</td></tr>
+        <table>
+            $message(uri, author, title, date) {
+                <tr>
+                    <td>$author;</td>
+                    <td><a href="$uri;">$title;</a></td>
+                    <td>$date;</td>
+                </tr>
             }message;
         </table>
-        }table;
     </div>
 </div>
 ```
 
-## Javascript Usage
+The javascript:
 
 ```javascript
+// Compile the prototype
 // `templateString` contains the above template
-var tmpl = new Tint.compile(templateString);
+var Tmpl = Tint.compile(templateString);
+
+// ...
+
+// Instantiate the builder object
+var tmpl = new Tmpl();
 
 // nav
 tmpl.nav.item().header('Inbox');
-tmpl.nav.item().link('inbox', 'Inbox', '#');
-tmpl.nav.item().link('cog', 'Settings', '#/settings');
+tmpl.nav.item().link('Inbox', '/');
+tmpl.nav.item().link('Settings', '/settings');
 tmpl.nav.item().header('Services');
-tmpl.nav.item().link('folder', 'MyService', '#/myservice');
+tmpl.nav.item().link('MyService', '/myservice');
 
 // content
 tmpl.title = "Your Inbox";
-
-var tmplTable = tmpl.table();
-tmplTable.class().add('table table-condensed');
-if (config.useborders) {
-    tmplTable._class[0].add('bordered');
-}
 for (var i=0; i < messages.length; i++) {
     var message = messages[i];
-    tmplTable.message(message.service, message.uri, message.author, message.summary, message.date);
+    tmpl.message(message.uri, message.author, message.summary, message.date);
 }
 
-// build output
+// Generate output
 var html = tmpl.toString();
 ```
 
-## Usage
+You can also extend the prototype, if you like:
 
-There are 3 template constructs: the variable, the block, and the function. **Variables** are direct substitutions within their block: they will be replaced with whatever string is assigned to them. **Blocks** contain bodies within brackets. The only create a new namespace in the template; their contents are included no matter what, and can't be altered without variables. **Functions** are blocks with parameter lists. Calling them instantiates a new copy of the block (with a new namespace) which will be added to the output. Thus, a function that is never called is never inserted, and a function that is called 5 times is inserted 5 times.
+```javascript
+// Add a custom constructor
+var Tmpl = new Tint.compile(templateString, function(services) {
+    this.nav.item().header('Inbox');
+    this.nav.item().link('Inbox', '');
+    this.nav.item().link('Settings', '/settings');
+    this.nav.item().header('Services');
+    for (var i=0; i < services.length; i++) {
+        this.nav.item().link(services[i].name, services[i].uri);
+    }
+});
+Tmpl.prototype.addMessage = function(message) {
+    this.message(message.uri, message.author, message.summary, message.date);
+};
 
-Tint uses those constructs to build a set of objects which produce the final output. The premise is to make the view layer a little smarter than variable binding while keeping logic out of the template file.
+// ...
+
+// Instantiate the builder object
+var tmpl = new Tmpl(my_services);
+tmpl.title = "Your Inbox";
+for (var i=0; i < messages.length; i++) {
+    tmpl.addMessage(messages[i]);
+}
+var html = tmpl.toString();
+```
+
+## How it works
+
+Tint's templates use 3 different constructs:
+
+ - Blocks
+ - Variables
+ - Functions
+
+**Blocks** are just namespaces for parts of the template. They don't change the output.
+
+`$block_name{ whatever }block_name;`
+
+**Variables** are direct substitutions. They're replaced with whatever value they're assigned.
+
+`$variable_name;`
+
+**Functions** are blocks which can be added multiple times, and which take parameter lists.
+
+`$func_name(param1, param2) { whatever $param1; whatever $param2; }func_name;`
+
+That's it; those building blocks are enough to generate your output. Any logic you need (like conditionals, escaping, or lists with commas on all but the last item) is added to the prototype, by you, using a language that's designed for it (Javascript).
+
+## A few additional notes
+
+Function calls generate blocks which are stored in an array with a prefix added to the name. That is, if my template has a `$profile(username)` function, then I can access the blocks it creates at `_profile[]`. Function parameters are stored as variables with the same name as the parameter itself: `_profile[0].username`.
