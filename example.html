@@ -5,6 +5,19 @@
         <meta author="pfraze">
         <title>Tint - Example</title>
         <script src="tint.js"></script>
+
+        <style>
+            body { color:#555 }
+            .label { display:inline-block; background:#eee; color:#888; padding:0 4px }
+            a { text-decoration:none; color:#06c }
+            #nav { float:left; width:200px }
+            #nav ul { list-style:none }
+            #content { margin-left:200px; }
+            #content table { border-collapse:collapse; border-top:1px solid #aaa; }
+            #content table tr td { border-bottom:1px solid #aaa; padding:5px }
+            #content table tr:hover td { background:#eee }
+            #content table tr td:nth-child(2) { width:500px; }
+        </style>
     </head>
     <body>
         <div id="target">
@@ -17,7 +30,7 @@
                     <ul class="nav-list">
                         $item() {
                             $header(label){<li class="nav-header">$label;</li>}header;
-                            $link(icon, label, uri){<li><a href="$uri;"><i class="icon-$icon;"></i> $label;</a></li>}link;
+                            $link(icon, label, uri){<li><a href="$uri;">$label;</a></li>}link;
                         }item;
                     </ul>
                     }nav;
@@ -25,7 +38,7 @@
                 <div id="content">
                     <h3>$title;</h3>
                     $table(){
-                    <table $class($class){class="$class; $add(class){ $class; }add;"}class;>
+                    <table class="$class(className){ $className; }class;">
                         $message(serviceLabel, uri, author, title, date) {
                             <tr><td><span class="label">$serviceLabel;</span></td><td><a href="$uri;"><strong>$author;</strong> $title;</a></td><td>$date;</td></tr>
                         }message;
@@ -36,14 +49,15 @@
         </script>
         <script>
     (function() {
-        var tmpl = new Tint.compile(document.getElementById('tmpl').innerHTML);
+        var MyTemplate = Tint.compile(document.getElementById('tmpl').innerHTML);
+        var tmpl = new MyTemplate();
 
         // nav
         tmpl.nav.item().header('Inbox');
         tmpl.nav.item().link('inbox', 'Inbox', '#');
-        tmpl.nav.item().link('cog', 'Settings', '#/settings');
+        tmpl.nav.item().link('cog', 'Settings', '#');
         tmpl.nav.item().header('Services');
-        tmpl.nav.item().link('folder', 'MyService', '#/myservice');
+        tmpl.nav.item().link('folder', 'GMail', '#');
 
         // content
         tmpl.title = "Your Inbox";
@@ -51,12 +65,12 @@
         var tmplTable = tmpl.table();
         tmplTable.class('table table-condensed');
         if (/*config.useborders*/ true) {
-            tmplTable._class[0].add('bordered');
+            tmplTable.class('bordered');
         }
         var messages = [
-            { service:"GMail", uri:"http://google.com", author:"friend", summary:"Hey Bud", date:"today" },
-            { service:"GMail", uri:"http://google.com", author:"friend", summary:"Hey Bud", date:"today" },
-            { service:"GMail", uri:"http://google.com", author:"friend", summary:"Hey Bud", date:"today" }
+            { service:"GMail", uri:"#", author:"friend", summary:"Hey Bud", date:"today" },
+            { service:"GMail", uri:"#", author:"coworker", summary:"Good day, colleague", date:"today" },
+            { service:"GMail", uri:"#", author:"wife", summary:"Buenos Dias, Mi Amore", date:"today" }
         ];
         for (var i=0; i < messages.length; i++) {
             var message = messages[i];
